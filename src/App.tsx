@@ -16,21 +16,27 @@ function App() {
     }
   };
 
+  function removeTask(taskToRemove: string): void{
+    const index = todoList.indexOf(taskToRemove);
+    if(index != -1){
+      const newList = todoList.splice(index+1, 1); // remove the task
+      setTodoList(newList);
+    }
+  }
+
   function TodoTaskList(task: string){
       return (
         <div className='tasks'>
           <div>{task}</div>
-          <button>Remove</button>
+          <button onClick={function() {removeTask(task)}}>Remove</button>
         </div>
       )
   };
 
-  function removeTask(taskToDelete: string): void{
-
-  }
 
   return (
     <div className='todolist-app'>
+      <h1>Todo List</h1>
       <div className='header'>
         <input type='text' placeholder='Enter A Task' onChange={handleChange}/>
         <button onClick={addTask}>Add Task</button>
