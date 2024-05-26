@@ -25,19 +25,19 @@ function App() {
   }
 
   function TodoTaskList(task: string){
-      return (
-        <div className='tasks'>
-          <div>{task}
-          <button onClick={function() {removeTask(task)}}>Remove</button>
-          </div>
+    return (
+      <div className='tasklist'>
+        <div>{task}
+        <button className='removeButton' onClick={function() {removeTask(task)}}>Remove</button>
         </div>
-      )
+      </div>
+    )
   };
 
 
   return (
     <div className='todolist-app'>
-      <h1>Todo List</h1>
+      <h1>TODO LIST</h1>
       <div className='header'>
         <input type='text' placeholder='Enter A Task' onFocus={function(event) {event.target.select()}} onChange={handleChange}/>
         <button onClick={addTask}>Add Task</button>
