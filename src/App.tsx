@@ -11,14 +11,14 @@ function App() {
   };
 
   function addTask(): void{
-    if(task.length > 0){ // Add only if task isn't empty
+    if(task.length > 0 && !todoList.includes(task)){ // Add only if task isn't empty and task isn't a dup
       setTodoList([...todoList, task]); // Adds task into todo list
     }
   };
 
   function removeTask(taskToRemove: string): void{
     const index = todoList.indexOf(taskToRemove);
-    if(index != -1){
+    if(index !== -1){
       const newList = todoList.splice(index+1, 1); // remove the task
       setTodoList(newList);
     }
@@ -27,8 +27,9 @@ function App() {
   function TodoTaskList(task: string){
       return (
         <div className='tasks'>
-          <div>{task}</div>
+          <div>{task}
           <button onClick={function() {removeTask(task)}}>Remove</button>
+          </div>
         </div>
       )
   };
@@ -38,7 +39,7 @@ function App() {
     <div className='todolist-app'>
       <h1>Todo List</h1>
       <div className='header'>
-        <input type='text' placeholder='Enter A Task' onChange={handleChange}/>
+        <input type='text' placeholder='Enter A Task' onFocus={function(event) {event.target.select()}} onChange={handleChange}/>
         <button onClick={addTask}>Add Task</button>
       </div>
       <div className='todolist'>
