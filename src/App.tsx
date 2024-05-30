@@ -1,6 +1,6 @@
 import React, {ChangeEvent, useState} from 'react';
 import './App.css';
-import { gql, useQuery } from '@apollo/client';
+import { gql, useMutation, useQuery } from '@apollo/client';
 
 interface User{
   id: string;
@@ -26,6 +26,38 @@ const GET_USERS = gql`
   }
 `;
 
+const ADD_TASK = gql`
+  mutation AddTask($task: String, $user_id: String) {
+    addTask(task: $task, user_id: $user_id){
+      id
+      task
+      is_completed
+      user_id
+    }
+  }
+`;
+
+function AddTask(){
+  const [addTask, {loading, error, data}] = useMutation(ADD_TASK);
+
+  if(loading){
+    return <p>Submitting ...</p>
+  }
+  if(error){
+    return <p>Submission Error: {error.message}</p>
+  }
+
+  // Incomplete
+}
+
+function handleClick(){
+  // Incomplete
+}
+
+function handleRemove(){
+  // Incomplete
+}
+
 function DisplayUsersTodos(){
   const {loading, error, data} = useQuery(GET_USERS);
 
@@ -41,7 +73,13 @@ function DisplayUsersTodos(){
       {data.users.map(({ id, name, todos }: User) => (
         <div key={id}>
           <h2>{name}</h2>
-
+          {todos.map(({task, is_completed}) =>(
+            <div>
+            <label>{task}</label>
+            <input type='checkbox' onClick={handleClick}/>
+            <button onClick={handleRemove}>Remove</button>
+            </div>
+          ))}
         </div>
       ))}
     </div>
@@ -51,17 +89,11 @@ function DisplayUsersTodos(){
 
 function App() {
   const [task, setTask] = useState<string>("");
-  const [todoList, setTodoList] = useState<string[]>([]);
+  //const [todoList, setTodoList] = useState<string[]>([]);
   
   function handleChange(event: ChangeEvent<HTMLInputElement>): void{
     event.preventDefault();
     setTask(event.target.value);
-  };
-
-  function addTask(): void{
-    if(task.length > 0 && !todoList.includes(task)){ // Add only if task isn't empty and task isn't a dup
-      setTodoList([...todoList, task]); // Adds task into todo list
-    }
   };
 
   /*
@@ -81,7 +113,7 @@ function App() {
       <div className='header'>
         <input type='text' placeholder='Name' onFocus={function(event) {event.target.select()}} onChange={handleChange}/>
         <input type='text' placeholder='Enter A Task' onFocus={function(event) {event.target.select()}} onChange={handleChange}/>
-        <button onClick={addTask}>Add Task</button>
+        <button onClick={AddTask}>Add Task</button>
       </div>
       <div className='todolist'>
         <DisplayUsersTodos />
