@@ -1,5 +1,53 @@
 import React, {ChangeEvent, useState} from 'react';
 import './App.css';
+import { gql, useQuery } from '@apollo/client';
+
+interface User{
+  id: string;
+  name: string;
+  todos: Todo[];
+}
+
+interface Todo{
+  task: string;
+  is_completed: boolean;
+}
+
+const GET_USERS = gql`
+  query TodoListQuery {
+    users {
+      id
+      name
+      todos {
+        task
+        is_completed
+      }
+    }
+  }
+`;
+
+function DisplayUsersTodos(){
+  const {loading, error, data} = useQuery(GET_USERS);
+
+  if(loading){
+    return <p>Loading ...</p>
+  };
+  if(error){
+    return <p>Error: {error.message}</p>
+  };
+
+  return (
+    <div>
+      {data.users.map(({ id, name, todos }: User) => (
+        <div key={id}>
+          <h2>{name}</h2>
+
+        </div>
+      ))}
+    </div>
+  );
+};
+
 
 function App() {
   const [task, setTask] = useState<string>("");
@@ -16,6 +64,7 @@ function App() {
     }
   };
 
+  /*
   function removeTask(taskToRemove: string): void{
     const index = todoList.indexOf(taskToRemove);
     if(index !== -1){
@@ -23,27 +72,19 @@ function App() {
       setTodoList(newList);
     }
   }
-
-  function TodoTaskList(task: string){
-    return (
-      <div className='tasklist'>
-        <div>{task}
-        <button className='removeButton' onClick={function() {removeTask(task)}}>Remove</button>
-        </div>
-      </div>
-    )
-  };
+  */
 
 
   return (
     <div className='todolist-app'>
       <h1>TODO LIST</h1>
       <div className='header'>
+        <input type='text' placeholder='Name' onFocus={function(event) {event.target.select()}} onChange={handleChange}/>
         <input type='text' placeholder='Enter A Task' onFocus={function(event) {event.target.select()}} onChange={handleChange}/>
         <button onClick={addTask}>Add Task</button>
       </div>
       <div className='todolist'>
-        {todoList.map(TodoTaskList)}
+        <DisplayUsersTodos />
       </div>
     </div>
   );
