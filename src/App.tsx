@@ -1,4 +1,4 @@
-import React, {ChangeEvent, useState} from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import { gql, useMutation, useQuery } from '@apollo/client';
 
@@ -9,9 +9,18 @@ interface User{
 }
 
 interface Todo{
+  id: string;
   task: string;
   is_completed: boolean;
 }
+
+const typeDefs = gql`
+  type Mutation{
+    addTask(task: String!, name: String!): Todo
+    updateTaskCompletion(id: String!, is_completed: Boolean!): Todo
+    removeTask(task: String!): Todo
+  }
+`;
 
 const GET_USERS = gql`
   query TodoListQuery {
@@ -27,18 +36,39 @@ const GET_USERS = gql`
 `;
 
 const ADD_TASK = gql`
-  mutation AddTask($task: String, $user_id: String) {
-    addTask(task: $task, user_id: $user_id){
+  mutation AddTask($task: String!, $name: String!) {
+    addTask(task: $task, name: $name){
       id
       task
       is_completed
-      user_id
+      user{
+        id
+        name
+      }
     }
   }
 `;
 
+const UPDATE_TASK_COMPLETION = gql`
+  mutation UpdateTaskCompletion($taskId: String, $is_completed: Boolean){
+    updateTaskCompletion(id: $taskId, is_completed: $is_completed){
+      id
+      is_completed
+    }
+  }
+`;
+
+const REMOVE_TASK = gql`
+  mutation RemoveTask($taskId: String){
+    removeTask(id: $taskId)
+      id
+  }
+`;
+
 function AddTask(){
-  const [addTask, {loading, error, data}] = useMutation(ADD_TASK);
+  const [addTask, { loading, error }] = useMutation(ADD_TASK);
+  const [todoTask, setTodoTask] = useState<string>("");
+  const [personName, setPersonName] = useState<string>("");
 
   if(loading){
     return <p>Submitting ...</p>
@@ -47,19 +77,48 @@ function AddTask(){
     return <p>Submission Error: {error.message}</p>
   }
 
-  // Incomplete
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if(todoTask.length <= 0){ // If task is an empty string
+      return;
+    }
+
+    addTask({
+      variables: {
+        task: todoTask,
+        name: personName
+      }
+    });
+    setTodoTask(""); // Clear text box
+    setPersonName("");
+  }
+
+  return(
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input 
+          type='text' 
+          value={personName} 
+          placeholder='Name'
+          onChange={ (e) => setPersonName(e.target.value)}
+        />
+        <input
+          type='text'
+          value={todoTask}
+          placeholder='Enter a Task'
+          onChange={ (e) => setTodoTask(e.target.value)}
+        />
+        <button type='submit'>Add Task</button>
+      </form>
+    </div>
+  );
 }
 
-function handleClick(){
-  // Incomplete
-}
-
-function handleRemove(){
-  // Incomplete
-}
 
 function DisplayUsersTodos(){
   const {loading, error, data} = useQuery(GET_USERS);
+  const [updateTaskCompletion] = useMutation(UPDATE_TASK_COMPLETION);
+  const [removeTask] = useMutation(REMOVE_TASK);
 
   if(loading){
     return <p>Loading ...</p>
@@ -68,16 +127,36 @@ function DisplayUsersTodos(){
     return <p>Error: {error.message}</p>
   };
 
+  function handleCheckBox(taskId: String, is_completed: Boolean){
+    updateTaskCompletion({
+      variables: {
+        id: taskId,
+        is_completed: !is_completed
+      }
+    });
+  } 
+
+  function handleRemove(taskId: String){
+    removeTask({
+      variables: {
+        id: taskId
+      }
+    });
+  }
+
+
   return (
     <div>
       {data.users.map(({ id, name, todos }: User) => (
         <div key={id}>
           <h2>{name}</h2>
-          {todos.map(({task, is_completed}) =>(
+          {todos.map(({ id: taskId, task, is_completed }) =>(
             <div>
             <label>{task}</label>
-            <input type='checkbox' onClick={handleClick}/>
-            <button onClick={handleRemove}>Remove</button>
+            <input type='checkbox' 
+              checked={is_completed}
+              onChange={() => handleCheckBox(taskId, is_completed)}/>
+            <button onClick={() => handleRemove(taskId)}>Remove</button>
             </div>
           ))}
         </div>
@@ -88,32 +167,12 @@ function DisplayUsersTodos(){
 
 
 function App() {
-  const [task, setTask] = useState<string>("");
-  //const [todoList, setTodoList] = useState<string[]>([]);
-  
-  function handleChange(event: ChangeEvent<HTMLInputElement>): void{
-    event.preventDefault();
-    setTask(event.target.value);
-  };
-
-  /*
-  function removeTask(taskToRemove: string): void{
-    const index = todoList.indexOf(taskToRemove);
-    if(index !== -1){
-      const newList = todoList.splice(index+1, 1); // remove the task
-      setTodoList(newList);
-    }
-  }
-  */
-
 
   return (
     <div className='todolist-app'>
       <h1>TODO LIST</h1>
       <div className='header'>
-        <input type='text' placeholder='Name' onFocus={function(event) {event.target.select()}} onChange={handleChange}/>
-        <input type='text' placeholder='Enter A Task' onFocus={function(event) {event.target.select()}} onChange={handleChange}/>
-        <button onClick={AddTask}>Add Task</button>
+        <AddTask />
       </div>
       <div className='todolist'>
         <DisplayUsersTodos />
