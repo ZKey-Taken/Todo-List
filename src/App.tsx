@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import { gql, useMutation, useQuery } from '@apollo/client';
+import { queries } from '@testing-library/react';
 
 interface User{
   id: string;
@@ -13,14 +14,6 @@ interface Todo{
   task: string;
   is_completed: boolean;
 }
-
-const typeDefs = gql`
-  type Mutation{
-    addTask(task: String!, name: String!): Todo
-    updateTaskCompletion(id: String!, is_completed: Boolean!): Todo
-    removeTask(task: String!): Todo
-  }
-`;
 
 const GET_USERS = gql`
   query TodoListQuery {
@@ -37,12 +30,9 @@ const GET_USERS = gql`
 
 const ADD_TASK = gql`
   mutation AddTask($task: String!, $name: String!) {
-    addTask(task: $task, name: $name){
-      id
+    insert_todos_one(object: {is_completed: false, task: $task, user: {data: {name: $name}}}) {
       task
-      is_completed
-      user{
-        id
+      user {
         name
       }
     }
@@ -52,8 +42,10 @@ const ADD_TASK = gql`
 const UPDATE_TASK_COMPLETION = gql`
   mutation UpdateTaskCompletion($taskId: String, $is_completed: Boolean){
     updateTaskCompletion(id: $taskId, is_completed: $is_completed){
-      id
-      is_completed
+      todos{
+        id
+        is_completed
+      }
     }
   }
 `;
@@ -61,7 +53,9 @@ const UPDATE_TASK_COMPLETION = gql`
 const REMOVE_TASK = gql`
   mutation RemoveTask($taskId: String){
     removeTask(id: $taskId)
-      id
+      todos{
+        id
+      }
   }
 `;
 
@@ -87,7 +81,8 @@ function AddTask(){
       variables: {
         task: todoTask,
         name: personName
-      }
+      },
+      refetchQueries: [{ query: GET_USERS }]
     });
     setTodoTask(""); // Clear text box
     setPersonName("");
@@ -132,7 +127,8 @@ function DisplayUsersTodos(){
       variables: {
         id: taskId,
         is_completed: !is_completed
-      }
+      },
+      refetchQueries: [{ query: GET_USERS }]
     });
   } 
 
@@ -140,7 +136,8 @@ function DisplayUsersTodos(){
     removeTask({
       variables: {
         id: taskId
-      }
+      },
+      refetchQueries: [{ query: GET_USERS }]
     });
   }
 
