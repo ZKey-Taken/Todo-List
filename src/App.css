@@ -24,6 +24,22 @@ button{
     padding-bottom: 5%;
 }
 
-.removeButton{
-    margin-left: 20px;
+.todo-item{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.task-label{
+    flex-grow: 1;
+}
+
+.completion-checkbox{
+    width: 30px;
+    height: 30px;
+    margin-right: 3%;
+}
+
+.remove-button{
+    margin-right: 28%;
 }

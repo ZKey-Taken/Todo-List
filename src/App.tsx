@@ -198,12 +198,12 @@ function DisplayUsersTodos(){
         <div key={user.id}>
           {displayName(user.name, user.todos)}
           {user.todos.map((todo: Todo) =>(
-            <div key={todo.id}>
-            <label>{todo.task}</label>
-            <input type='checkbox' 
+            <div key={todo.id} className='todo-item'>
+            <label className='task-label'>{todo.task}</label>
+            <input className='completion-checkbox' type='checkbox' 
               checked={todo.is_completed}
               onChange={() => handleCheckBox(todo.id, todo.is_completed)}/>
-            <button onClick={() => handleRemove(todo.id)}>Remove</button>
+            <button className='remove-button' onClick={() => handleRemove(todo.id)}>Remove</button>
             </div>
           ))}
         </div>
