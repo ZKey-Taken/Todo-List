@@ -153,7 +153,7 @@ function DisplayUsersTodos(){
   };
 
   function handleCheckBox(taskId: UUID, is_completed: boolean){
-    if(!taskId){
+    if(taskId.length <= 0){
       console.error("Error, taskId:" + taskId);
       return;
     }
@@ -168,7 +168,7 @@ function DisplayUsersTodos(){
   } 
 
   function handleRemove(taskId: UUID){
-    if(!taskId){
+    if(taskId.length <= 0){
       console.error("Error, taskId:" + taskId);
       return;
     }
@@ -181,12 +181,22 @@ function DisplayUsersTodos(){
     });
   }
 
+  function displayName(name: string, todos: Todo[]){ 
+    // function only display names with tasks, in other words if a user doesn't have any task dont display.
+    if(todos.length > 0){
+      return(
+        <h2>{name}</h2>
+      );
+    }else{
+      return;
+    }
+  }
   
   return (
     <div>
       {data.users.map((user: User) => (
         <div key={user.id}>
-          <h2>{user.name}</h2>
+          {displayName(user.name, user.todos)}
           {user.todos.map((todo: Todo) =>(
             <div key={todo.id}>
             <label>{todo.task}</label>
