@@ -21,6 +21,7 @@ const GET_USERS = gql`
       id
       name
       todos {
+        id
         task
         is_completed
       }
@@ -31,6 +32,7 @@ const GET_USERS = gql`
 const ADD_TASK_NEW_USER = gql`
   mutation AddTaskNewUser($task: String!, $name: String!) {
     insert_todos_one(object: {is_completed: false, task: $task, user: {data: {name: $name}}}) {
+      id
       task
       is_completed
       user {
@@ -53,7 +55,7 @@ const ADD_TASK_OLD_USER = gql`
 `;
 
 const UPDATE_TASK_COMPLETION = gql`
-  mutation UpdateTaskCompletion($id: uuid!, $is_completed: boolean!){
+  mutation UpdateTaskCompletion($id: uuid!, $is_completed: Boolean!){
     update_todos_by_pk(pk_columns: {id: $id}, _set: {is_completed: $is_completed}) {
       id
       is_completed
@@ -151,6 +153,11 @@ function DisplayUsersTodos(){
   };
 
   function handleCheckBox(taskId: UUID, is_completed: boolean){
+    if(!taskId){
+      console.error("Error, taskId:" + taskId);
+      return;
+    }
+
     updateTaskCompletion({
       variables: {
         id: taskId,
@@ -161,6 +168,11 @@ function DisplayUsersTodos(){
   } 
 
   function handleRemove(taskId: UUID){
+    if(!taskId){
+      console.error("Error, taskId:" + taskId);
+      return;
+    }
+
     removeTask({
       variables: {
         id: taskId
@@ -169,19 +181,19 @@ function DisplayUsersTodos(){
     });
   }
 
-
+  
   return (
     <div>
-      {data.users.map(({ id, name, todos }: User) => (
-        <div key={id}>
-          <h2>{name}</h2>
-          {todos.map(({ id, task, is_completed }) =>(
-            <div>
-            <label>{task}</label>
+      {data.users.map((user: User) => (
+        <div key={user.id}>
+          <h2>{user.name}</h2>
+          {user.todos.map((todo: Todo) =>(
+            <div key={todo.id}>
+            <label>{todo.task}</label>
             <input type='checkbox' 
-              checked={is_completed}
-              onChange={() => handleCheckBox(id, is_completed)}/>
-            <button onClick={() => handleRemove(id)}>Remove</button>
+              checked={todo.is_completed}
+              onChange={() => handleCheckBox(todo.id, todo.is_completed)}/>
+            <button onClick={() => handleRemove(todo.id)}>Remove</button>
             </div>
           ))}
         </div>
