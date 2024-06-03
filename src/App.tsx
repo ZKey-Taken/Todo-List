@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import './App.css';
 import { gql, useMutation, useQuery } from '@apollo/client';
-import { queries } from '@testing-library/react';
+import { UUID } from 'crypto';
 
 interface User{
-  id: string;
+  id: UUID;
   name: string;
   todos: Todo[];
 }
 
 interface Todo{
-  id: string;
+  id: UUID;
   task: string;
   is_completed: boolean;
 }
@@ -28,48 +28,53 @@ const GET_USERS = gql`
   }
 `;
 
-const ADD_TASK = gql`
-  mutation AddTask($task: String!, $name: String!) {
+const ADD_TASK_NEW_USER = gql`
+  mutation AddTaskNewUser($task: String!, $name: String!) {
     insert_todos_one(object: {is_completed: false, task: $task, user: {data: {name: $name}}}) {
       task
+      is_completed
       user {
+        id
         name
       }
     }
   }
 `;
 
+const ADD_TASK_OLD_USER = gql`
+  mutation AddTaskOldUser($task: String!, $userId: uuid!){
+    insert_todos_one(object: {task: $task, is_completed: false, user_id: $userId}) {
+      id
+      is_completed
+      task
+      user_id
+    }
+  }
+`;
+
 const UPDATE_TASK_COMPLETION = gql`
-  mutation UpdateTaskCompletion($taskId: String, $is_completed: Boolean){
-    updateTaskCompletion(id: $taskId, is_completed: $is_completed){
-      todos{
-        id
-        is_completed
-      }
+  mutation UpdateTaskCompletion($id: uuid!, $is_completed: boolean!){
+    update_todos_by_pk(pk_columns: {id: $id}, _set: {is_completed: $is_completed}) {
+      id
+      is_completed
     }
   }
 `;
 
 const REMOVE_TASK = gql`
-  mutation RemoveTask($taskId: String){
-    removeTask(id: $taskId)
-      todos{
-        id
-      }
+  mutation RemoveTask($id: uuid!){
+    delete_todos_by_pk(id: $id) {
+      id
+    }
   }
 `;
 
 function AddTask(){
-  const [addTask, { loading, error }] = useMutation(ADD_TASK);
+  const [addTaskToNewUser] = useMutation(ADD_TASK_NEW_USER);
+  const [addTaskToOldUser] = useMutation(ADD_TASK_OLD_USER);
+  const { loading, error, data } = useQuery(GET_USERS);
   const [todoTask, setTodoTask] = useState<string>("");
   const [personName, setPersonName] = useState<string>("");
-
-  if(loading){
-    return <p>Submitting ...</p>
-  }
-  if(error){
-    return <p>Submission Error: {error.message}</p>
-  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,13 +82,36 @@ function AddTask(){
       return;
     }
 
-    addTask({
-      variables: {
-        task: todoTask,
-        name: personName
-      },
-      refetchQueries: [{ query: GET_USERS }]
+    if(loading){
+      return <p>Loading ...</p>
+    }
+    if(error){
+      return <p>Error: {error.message}</p>
+    }
+    
+    // Make a dictionary/hashmap to store all userName to userId
+    const userNameToUserId = new Map<string, UUID>();
+    data.users.forEach((user: User) => {
+      userNameToUserId.set(user.name, user.id);
     });
+
+    if(userNameToUserId.has(personName)){ // Name exists so we add task to old user
+      addTaskToOldUser({
+        variables: {
+          task: todoTask,
+          userId: userNameToUserId.get(personName)
+        },
+        refetchQueries: [{ query: GET_USERS }]
+      });
+    }else{ // Add task to new user
+      addTaskToNewUser({
+        variables: {
+          task: todoTask,
+          name: personName
+        },
+        refetchQueries: [{ query: GET_USERS }]
+      });
+    }
     setTodoTask(""); // Clear text box
     setPersonName("");
   }
@@ -122,7 +150,7 @@ function DisplayUsersTodos(){
     return <p>Error: {error.message}</p>
   };
 
-  function handleCheckBox(taskId: String, is_completed: Boolean){
+  function handleCheckBox(taskId: UUID, is_completed: boolean){
     updateTaskCompletion({
       variables: {
         id: taskId,
@@ -132,7 +160,7 @@ function DisplayUsersTodos(){
     });
   } 
 
-  function handleRemove(taskId: String){
+  function handleRemove(taskId: UUID){
     removeTask({
       variables: {
         id: taskId
@@ -147,13 +175,13 @@ function DisplayUsersTodos(){
       {data.users.map(({ id, name, todos }: User) => (
         <div key={id}>
           <h2>{name}</h2>
-          {todos.map(({ id: taskId, task, is_completed }) =>(
+          {todos.map(({ id, task, is_completed }) =>(
             <div>
             <label>{task}</label>
             <input type='checkbox' 
               checked={is_completed}
-              onChange={() => handleCheckBox(taskId, is_completed)}/>
-            <button onClick={() => handleRemove(taskId)}>Remove</button>
+              onChange={() => handleCheckBox(id, is_completed)}/>
+            <button onClick={() => handleRemove(id)}>Remove</button>
             </div>
           ))}
         </div>
